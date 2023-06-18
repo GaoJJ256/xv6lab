@@ -69,13 +69,49 @@ sys_sleep(void)
   return 0;
 }
 
-
+// #define LAB_PGTBL // --------------------------------------------------- << here !
 #ifdef LAB_PGTBL
 int
 sys_pgaccess(void)
 {
-  // lab pgtbl: your code here.
-  return 0;
+  //接收参数
+    int len;
+    uint64 addr;
+    int bitmask;
+    argaddr(0, &addr);
+    argint(1, &len);
+    if(len > 32 || len < 0){
+        printf("too many pages to check\n");
+        exit(1);
+    }
+    argint(2, &bitmask);
+
+    int ans = 0x0;
+    struct proc * p = myproc();
+
+    for(int i = 0; i < len; i ++)
+    {
+        int va = addr + i * PGSIZE;
+        if(va >= MAXVA)
+            goto bad;
+
+        pte_t *pte = walk(p->pagetable, va, 0);
+        if(pte == 0)
+            goto bad;
+        
+        if((*pte & PTE_A) != 0)
+            ans |= (1 << i);
+        *pte &= ~PTE_A;  //将PTE_A位置0 
+    }
+
+    if(copyout(p->pagetable, bitmask, (char *)&ans, sizeof(ans)) < 0)
+        return -1;
+
+    return 0;
+
+    bad:
+        printf("some problems in va2pte\n");
+        return 1;
 }
 #endif
 

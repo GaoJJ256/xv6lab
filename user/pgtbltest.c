@@ -55,10 +55,10 @@ pgaccess_test()
   unsigned int abits;
   printf("pgaccess_test starting\n");
   testname = "pgaccess_test";
-  buf = malloc(32 * PGSIZE);
+  buf = malloc(32 * PGSIZE); // 创建32个页
   if (pgaccess(buf, 32, &abits) < 0)
     err("pgaccess failed");
-  buf[PGSIZE * 1] += 1;
+  buf[PGSIZE * 1] += 1;  // 向1、2、30号页中写
   buf[PGSIZE * 2] += 1;
   buf[PGSIZE * 30] += 1;
   if (pgaccess(buf, 32, &abits) < 0)
