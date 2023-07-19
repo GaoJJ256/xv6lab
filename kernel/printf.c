@@ -132,3 +132,19 @@ printfinit(void)
   initlock(&pr.lock, "pr");
   pr.locking = 1;
 }
+
+void 
+backtrace(void)
+{
+  uint64 fp = r_fp();
+  // fp是一个栈帧，会被分配一个页面
+  // 如果fp
+  while(PGROUNDUP(fp) - PGROUNDDOWN(fp) == PGSIZE)
+  {
+    // 返回地址存放在fp的-8偏移处
+    uint64 ret_addr = *(uint64 *)(fp - 8);
+    printf("%p\n", ret_addr);
+    // 上一个栈帧的fp存放在当前栈帧的-16偏移处
+    fp = *(uint64 *)(fp - 16);
+  }
+}
