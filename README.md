@@ -7,3 +7,6 @@ mit cs6.s081 xv6lab
   - Speed up system calls
   - Print a page table
   - Detect which pages have been accessed
+- traps
+  - Backtrace
+  - Alarm
