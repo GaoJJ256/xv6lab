@@ -139,7 +139,9 @@ backtrace(void)
   uint64 fp = r_fp();
   // fp是一个栈帧，会被分配一个页面
   // 如果fp
-  while(PGROUNDUP(fp) - PGROUNDDOWN(fp) == PGSIZE)
+  uint64 up = PGROUNDUP(fp);
+  uint64 down = PGROUNDDOWN(fp);
+  while(fp < up && fp > down)
   {
     // 返回地址存放在fp的-8偏移处
     uint64 ret_addr = *(uint64 *)(fp - 8);
