@@ -10,6 +10,7 @@ mit cs6.s081 xv6lab
 - traps
   - Backtrace
   - Alarm
-- lazy
+- lazy allocation
+- copy-on-write fork
   
 
