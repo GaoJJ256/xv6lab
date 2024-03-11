@@ -86,7 +86,7 @@ pipewrite(struct pipe *pi, uint64 addr, int n)
       return -1;
     }
     if(pi->nwrite == pi->nread + PIPESIZE){ //DOC: pipewrite-full
-      wakeup(&pi->nread);
+      wakeup(&pi->nread);  // 
       sleep(&pi->nwrite, &pi->lock);
     } else {
       char ch;

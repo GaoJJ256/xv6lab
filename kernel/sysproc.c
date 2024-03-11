@@ -73,6 +73,7 @@ sys_sleep(void)
   return 0;
 }
 
+// 杀死一个进程
 uint64
 sys_kill(void)
 {

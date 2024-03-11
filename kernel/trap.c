@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+#define LAB_MMAP 1
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -15,6 +17,7 @@ extern char trampoline[], uservec[], userret[];
 void kernelvec();
 
 extern int devintr();
+int mmap_handler(int va, int cause);
 
 void
 trapinit(void)
@@ -49,8 +52,9 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
+  uint64 cause = r_scause();
   
-  if(r_scause() == 8){
+  if(cause == 8){
     // system call
 
     if(p->killed)
@@ -67,7 +71,14 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else {
+  } else if(cause == 13 || cause == 15){
+    uint64 fault_va = r_stval();
+    if(PGROUNDUP(p->trapframe->sp) - 1 < fault_va && fault_va < p->sz) {
+      if(mmap_handler(r_stval(), cause) != 0) p->killed = 1;
+    } else
+      p->killed = 1;
+  
+  }else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;
@@ -216,5 +227,59 @@ devintr()
   } else {
     return 0;
   }
+}
+
+
+int mmap_handler(int va, int cause) {
+  int i;
+  struct proc* p = myproc();
+  // 根据地址查找属于哪一个VMA
+  for(i = 0; i < NVMA; ++i) {
+    if(p->vma[i].used && p->vma[i].addr <= va && va <= p->vma[i].addr + p->vma[i].len - 1) {
+      break;
+    }
+  }
+  if(i == NVMA)
+    return -1;
+
+  int pte_flags = PTE_U;
+  if(p->vma[i].prot & PROT_READ) pte_flags |= PTE_R;
+  if(p->vma[i].prot & PROT_WRITE) pte_flags |= PTE_W;
+  if(p->vma[i].prot & PROT_EXEC) pte_flags |= PTE_X;
+
+
+  struct file* vf = p->vma[i].vfile;
+  // 读导致的页面错误
+  if(cause == 13 && vf->readable == 0) return -1;
+  // 写导致的页面错误
+  if(cause == 15 && vf->writable == 0) return -1;
+
+  void* pa = kalloc();
+  if(pa == 0)
+    return -1;
+  memset(pa, 0, PGSIZE);
+
+  // 读取文件内容
+  ilock(vf->ip);
+  // 计算当前页面读取文件的偏移量，实验中p->vma[i].offset总是0
+  // 要按顺序读读取，例如内存页面A,B和文件块a,b
+  // 则A读取a，B读取b，而不能A读取b，B读取a
+  int offset = p->vma[i].offset + PGROUNDDOWN(va - p->vma[i].addr);
+  int readbytes = readi(vf->ip, 0, (uint64)pa, offset, PGSIZE);
+  // 什么都没有读到
+  if(readbytes == 0) {
+    iunlock(vf->ip);
+    kfree(pa);
+    return -1;
+  }
+  iunlock(vf->ip);
+
+  // 添加页面映射
+  if(mappages(p->pagetable, PGROUNDDOWN(va), PGSIZE, (uint64)pa, pte_flags) != 0) {
+    kfree(pa);
+    return -1;
+  }
+
+  return 0;
 }
 
