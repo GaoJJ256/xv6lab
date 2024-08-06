@@ -24,3 +24,6 @@ ph
 barrier
 /lab-*.json
 .DS_Store
+.vscode/launch.json
+.vscode/settings.json
+.vscode/c_cpp_properties.json
