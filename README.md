@@ -16,8 +16,8 @@ mit cs6.s081 xv6lab
   - Speed up system calls
   - Print a page table
   - Detect which pages have been accessed
-  - ** A kernel page table per process **
-  - ** simplify copyin/copyinstr **
+  - A kernel page table per process
+  - simplify copyin/copyinstr
 - traps
   - Backtrace
   - Alarm
@@ -27,5 +27,6 @@ mit cs6.s081 xv6lab
   - uthread: switching between threads
   - using threads
   - barrier
+- mmap
   
 
